@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -20,8 +21,13 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _imageUrlFocusNode = FocusNode();
   final _form = GlobalKey<FormState>();
   var _editedProduct =
-      Product(id: ' ', title: '', description: '', price: 0, imageUrl: '');
+  Product(id: '',
+      title: '',
+      description: '',
+      price: 0,
+      imageUrl: '');
   var _isInit = true;
+  var _isLoading = false;
   var _initValues = {
     'title': '',
     'description': '',
@@ -38,7 +44,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
   @override
   void didChangeDependencies() {
     if (_isInit) {
-      final productId = ModalRoute.of(context)!.settings.arguments;
+      final productId = ModalRoute
+          .of(context)!
+          .settings
+          .arguments;
       if (productId != null) {
         _editedProduct = Provider.of<Products>(context, listen: false)
             .findById(productId.toString());
@@ -68,7 +77,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   void _updateImageUrl() {
     if (!_imageUrlFocusNode.hasFocus) {
       if (!_imageUrlController.text.startsWith('http') &&
-              !_imageUrlController.text.startsWith('https') ||
+          !_imageUrlController.text.startsWith('https') ||
           !_imageUrlController.text.endsWith('.png') &&
               !_imageUrlController.text.endsWith('.jpg') &&
               !_imageUrlController.text.endsWith('.jpeg')) {
@@ -78,20 +87,55 @@ class _EditProductScreenState extends State<EditProductScreen> {
     }
   }
 
-  void _saveForm() {
+  Future<void> _saveForm() async {
     final isValid = _form.currentState?.validate();
     if (!isValid!) {
       return;
     }
     _form.currentState?.save();
-    if (_editedProduct.id != null) {
-      Provider.of<Products>(context, listen: false)
+    setState(
+          () {
+        _isLoading = true;
+      },
+    );
+    if (_editedProduct.id != '') {
+      await Provider.of<Products>(context, listen: false)
           .updateProduct(_editedProduct.id, _editedProduct);
+
+      log('Editing');
     } else {
-      Provider.of<Products>(context, listen: false).addProduct(_editedProduct);
+      log('adding');
+      try {
+        await Provider.of<Products>(context, listen: false).addProduct(_editedProduct);
+      } catch (error) {
+        await showDialog(
+          context: context,
+          builder: (context) =>
+              AlertDialog(
+                  title: const Text('An error occured'),
+                  content: const Text('Something went wrong'),
+                  actions: <Widget>[
+                    ElevatedButton(onPressed: () {
+                      Navigator.of(context).pop();
+                    }, child: const Text('Okay'))
+                  ]
+              ),
+        );
+      }
+      // finally {
+      //   setState(() {
+      //     _isLoading = false;
+      //   });
+      //   Navigator.of(context).pop();
+      // }
     }
+    setState(() {
+      _isLoading = false;
+    });
     Navigator.of(context).pop();
   }
+
+//Navigator.of(context).pop();
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +144,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
         title: const Text('Edit product'),
         actions: [IconButton(onPressed: _saveForm, icon: Icon(Icons.save))],
       ),
-      body: Padding(
+      body: _isLoading
+          ? Center(
+        child: CircularProgressIndicator(),
+      )
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _form,
@@ -130,7 +178,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 keyboardType: TextInputType.number,
                 focusNode: _priceFocusNode,
                 onFieldSubmitted: (_) {
-                  FocusScope.of(context).requestFocus(_descriptionFocusNode);
+                  FocusScope.of(context)
+                      .requestFocus(_descriptionFocusNode);
                 },
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -155,7 +204,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
               ),
               TextFormField(
                 initialValue: _initValues['description'],
-                decoration: const InputDecoration(labelText: 'Description'),
+                decoration:
+                const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.multiline,
@@ -191,15 +241,15 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       child: _imageUrlController.text.isEmpty
                           ? Text('Enter a URL')
                           : FittedBox(
-                              child: Image.network(
-                                _imageUrlController.text,
-                                fit: BoxFit.cover,
-                              ),
-                            )),
+                        child: Image.network(
+                          _imageUrlController.text,
+                          fit: BoxFit.cover,
+                        ),
+                      )),
                   Expanded(
                     child: TextFormField(
                         decoration:
-                            const InputDecoration(labelText: 'Image URL'),
+                        const InputDecoration(labelText: 'Image URL'),
                         keyboardType: TextInputType.url,
                         textInputAction: TextInputAction.done,
                         controller: _imageUrlController,

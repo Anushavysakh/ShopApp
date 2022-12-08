@@ -7,27 +7,42 @@ import '../providers/products.dart';
 class UserProductItem extends StatelessWidget {
   final String id;
   final String title;
-  final String imageUrl ;
+  final String imageUrl;
 
-   UserProductItem(this.title, this.imageUrl, this.id);
+  UserProductItem(this.title, this.imageUrl, this.id);
 
   @override
   Widget build(BuildContext context) {
+    final scaffold = ScaffoldMessenger.of(context);
     return ListTile(
       title: Text(title),
       leading: CircleAvatar(
         backgroundImage: NetworkImage(imageUrl),
-      ),trailing: Container(
-       width: 110,
+      ),
+      trailing: Container(
+        width: 110,
         child: Row(
           children: [
-            IconButton(onPressed: () {
-              Navigator.of(context).pushNamed(EditProductScreen.routeName,arguments: id);
-            }, icon: Icon(Icons.edit),color: Theme.of(context).primaryColor),
-            IconButton(onPressed: () {
-
-            }, icon: Icon(Icons.delete),color: Theme.of(context).errorColor,),
-
+            IconButton(
+                onPressed: () {
+                  Navigator.of(context)
+                      .pushNamed(EditProductScreen.routeName, arguments: id);
+                },
+                icon: Icon(Icons.edit),
+                color: Theme.of(context).primaryColor),
+            IconButton(
+              onPressed: () async {
+                try {
+                  await Provider.of<Products>(context, listen: false)
+                      .deleteProduct(id);
+                } catch (error) {
+                  scaffold
+                      .showSnackBar(SnackBar(content: Text('Deleting failed')));
+                }
+              },
+              icon: const Icon(Icons.delete),
+              color: Theme.of(context).errorColor,
+            ),
           ],
         ),
       ),
