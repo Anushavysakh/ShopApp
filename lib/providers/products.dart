@@ -10,10 +10,14 @@ class Products with ChangeNotifier {
   List<Product> _items = [];
 
   // var _showFavoritesOnly = false;
-   String? authToken;
-   String? userId;
+  String? authToken;
+  String? userId;
 
-  Products(this.authToken, this._items, this.userId,);
+  Products(
+    this.authToken,
+    this._items,
+    this.userId,
+  );
 
   List<Product> get items {
     // if(_showFavoritesOnly){
@@ -26,28 +30,21 @@ class Products with ChangeNotifier {
     return _items.where((prodItem) => prodItem.isFavorite).toList();
   }
 
-  // void showFavoritesOnly() {
-  //   _showFavoritesOnly = true;
-  //   notifyListeners();
-  // }
-  //
-  // void showAll(){
-  //   _showFavoritesOnly = false;
-  //   notifyListeners();
-  // }
 
   Future<void> fetchAndSetProducts([bool filterByUser = false]) async {
-    final filterString = filterByUser ? 'orderBy="creatorId"&equalTo="$userId"' : '';
+    final filterString =
+        filterByUser ? 'orderBy="creatorId"&equalTo="$userId"' : '';
     var url =
         'https://shopapp-e0d5d-default-rtdb.asia-southeast1.firebasedatabase.app/products.json?auth=$authToken&$filterString';
     try {
       final response = await http.get(Uri.parse(url));
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
 
-      if(extractedData == null){
+      if (extractedData == null) {
         return;
       }
-      url = 'https://shopapp-e0d5d-default-rtdb.asia-southeast1.firebasedatabase.app/userFavorites/$userId.json?auth=$authToken';
+      url =
+          'https://shopapp-e0d5d-default-rtdb.asia-southeast1.firebasedatabase.app/userFavorites/$userId.json?auth=$authToken';
       final favoritesResponse = await http.get(Uri.parse(url));
       final favoriteData = json.decode(favoritesResponse.body);
       final List<Product> loadedProducts = [];
@@ -59,16 +56,15 @@ class Products with ChangeNotifier {
             price: prodData['price'],
             imageUrl: prodData['imageUrl'],
             isFavorite:
-            favoriteData == null ? false : favoriteData[prodId] ?? false));
+                favoriteData == null ? false : favoriteData[prodId] ?? false));
       });
 
       _items = loadedProducts;
-      notifyListeners();
+      //notifyListeners();
 
     } catch (error) {
       rethrow;
     }
-
   }
 
   Product findById(String id) {
@@ -77,7 +73,7 @@ class Products with ChangeNotifier {
 
   Future<void> addProduct(Product product) async {
     final url =
-        'https://shopapp-e0d5d-default-rtdb.asia-southeast1.firebasedatabase.app/products.json?auth=$authToken';
+          'https://shopapp-e0d5d-default-rtdb.asia-southeast1.firebasedatabase.app/products.json?auth=$authToken';
     try {
       final response = await http.post(
         (Uri.parse(url)),
@@ -86,7 +82,7 @@ class Products with ChangeNotifier {
           'description': product.description,
           'imageUrl': product.imageUrl,
           'price': product.price,
-          'creatorId' : userId
+          'creatorId': userId
         }),
       );
       print(json.decode(response.body));
@@ -104,7 +100,7 @@ class Products with ChangeNotifier {
 
     } catch (error) {
       print(error);
-      throw error;
+      rethrow;
     }
   }
 
@@ -131,21 +127,27 @@ class Products with ChangeNotifier {
 
   Future<void> deleteProduct(String id) async {
     final url =
-        'https://shopapp-2602f-default-rtdb.firebaseio.com/products/$id.json?auth=$authToken';
+        'https://shopapp-e0d5d-default-rtdb.asia-southeast1.firebasedatabase.app/products/$id.json?auth=$authToken';
     final existingProductIndex = _items.indexWhere((prod) => prod.id == id);
     Product? existingProduct = _items[existingProductIndex];
+    try{
+      final response = await http.delete(Uri.parse(url));
       _items.removeAt(existingProductIndex);
       notifyListeners();
-      final response = await http.delete(Uri.parse(url));
       if (response.statusCode >= 400) {
-        _items.insert(existingProductIndex, existingProduct);
+        _items.insert(existingProductIndex, existingProduct!);
         notifyListeners();
         throw HttpException('Could not delete product');
       }
       existingProduct = null;
 
-      // _items.removeAt(existingProductIndex);
-      // notifyListeners();
+      _items.removeAt(existingProductIndex);
+      notifyListeners();
+    } catch(error){
+      throw NetException("Something went wrong!!");
+
+    }
+
 
   }
 }

@@ -14,6 +14,8 @@ import 'package:shop_app/screens/products_overview_screen.dart';
 import 'package:shop_app/screens/splash_screen.dart';
 import 'package:shop_app/screens/user_product_screen.dart';
 
+import 'helper/custom_route.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -26,53 +28,59 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (context) => Auth(),
+        ChangeNotifierProvider.value(
+          value: Auth(),
         ),
         ChangeNotifierProxyProvider<Auth, Products>(
             create: (_) => Products('', [], ''),
             update: (context, auth, previousProducts) {
               return Products(
                   auth.token,
-                  previousProducts == '' ? [] : previousProducts!.items,
-                  auth.userId
-              );
+                  previousProducts == null ? [] : previousProducts.items,
+                  auth.userId);
             }),
-        ChangeNotifierProvider(
-          create: (context) => Cart(),
+        ChangeNotifierProvider.value(
+          value: Cart(),
         ),
         ChangeNotifierProxyProvider<Auth, Orders>(
-          create: (_) => Orders([], null, ''),
-          update: (ctx, auth, previousOrders) {
-            return Orders(
-                previousOrders == ''  ? [] : previousOrders!.orders,auth.userId,auth.userId.toString() );
-          },
-        ),
+            create: (_) => Orders([], '', ''),
+            update: (ctx, auth, previousOrders) {
+              return Orders(
+                previousOrders == '' ? [] : previousOrders!.orders,
+                auth.token,
+                auth.userId,
+              );
+            }),
       ],
       child: Consumer<Auth>(
-        builder: (context, auth, _) =>
-            MaterialApp(
-                title: 'Flutter Demo',
-                theme: ThemeData(
-                  primarySwatch: Colors.blue,
+        builder: (context, auth, _) => MaterialApp(
+          title: 'Flutter Demo',
+          theme: ThemeData(
+              primarySwatch: Colors.blue,
+              pageTransitionsTheme: PageTransitionsTheme(builders: {
+                TargetPlatform.android: CustomPageTransitionBuilder(),
+                TargetPlatform.iOS: CustomPageTransitionBuilder(),
+              })),
+          debugShowCheckedModeBanner: false,
+          home: auth.isAuth
+              ? ProductOverviewScreen()
+              : FutureBuilder(
+                  future: auth.tryAutoLogin(),
+                  builder: (context, authResultSnapshot) =>
+                      authResultSnapshot.connectionState ==
+                              ConnectionState.waiting
+                          ? SplashScreen()
+                          : AuthScreen(),
                 ),
-                debugShowCheckedModeBanner: false,
-                home: auth.isAuth ? ProductOverviewScreen() :
-                FutureBuilder(
-                    future: auth.tryAutoLogin(),
-                    builder: (context, authResultSnapshot) =>
-                    authResultSnapshot.connectionState ==
-                        ConnectionState.waiting
-                        ? SplashScreen()
-                        : AuthScreen(), ),
-        routes: {
-          ProductDetailScreen.routeName: (context) => ProductDetailScreen(),
-          CartScreen.routeName: (context) => CartScreen(),
-          OrderScreen.routeName: (context) => OrderScreen(),
-          UserProductScreen.routeName: (context) => UserProductScreen(),
-          EditProductScreen.routeName: (context) => EditProductScreen(),
-        },
+          routes: {
+            ProductDetailScreen.routeName: (context) => ProductDetailScreen(),
+            CartScreen.routeName: (context) => CartScreen(),
+            OrderScreen.routeName: (context) => OrderScreen(),
+            UserProductScreen.routeName: (context) => UserProductScreen(),
+            EditProductScreen.routeName: (context) => EditProductScreen(),
+          },
+        ),
       ),
-    ),);
+    );
   }
 }

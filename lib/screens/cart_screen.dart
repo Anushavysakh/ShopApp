@@ -48,12 +48,12 @@ class CartScreen extends StatelessWidget {
             child: ListView.builder(
                 itemCount: cart.items.length,
                 itemBuilder: (context, i) => CartItem(
-                      id: cart.items.values.toList()[i].id,
-                      productId: cart.items.keys.toList()[i],
-                      price: cart.items.values.toList()[i].price,
-                      quantity: cart.items.values.toList()[i].quantity,
-                      title: cart.items.values.toList()[i].title,
-                    )),
+                  id: cart.items.values.toList()[i].id,
+                  productId: cart.items.keys.toList()[i],
+                  price: cart.items.values.toList()[i].price,
+                  quantity: cart.items.values.toList()[i].quantity,
+                  title: cart.items.values.toList()[i].title,
+                )),
           ),
         ],
       ),
@@ -74,28 +74,28 @@ class OrderButton extends StatefulWidget {
 }
 
 class _OrderButtonState extends State<OrderButton> {
-  var _isloading = false;
+  var _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: (widget.cart.totalAmount <= 0 || _isloading)
+      onPressed: (widget.cart.totalAmount <= 0 || _isLoading)
           ? null
           : () async {
-              setState(() {
-                _isloading = true;
-              });
-              final items = widget.cart.items.values.toList();
+        setState(() {
+          _isLoading = true;
+        });
+        final items = widget.cart.items.values.toList();
 
-              await Provider.of<Orders>(context, listen: false)
-                  .addOrder(items, widget.cart.totalAmount);
-              setState(() {
-                _isloading = false;
-              });
+        await Provider.of<Orders>(context, listen: false)
+            .addOrder(items, widget.cart.totalAmount);
+        setState(() {
+          _isLoading = false;
+        });
 
-              widget.cart.clearCart();
-            },
-      child: _isloading ? CircularProgressIndicator() : Text("Order Now"),
+        widget.cart.clearCart();
+      },
+      child: _isLoading ? CircularProgressIndicator() : Text("Order Now"),
     );
   }
 }

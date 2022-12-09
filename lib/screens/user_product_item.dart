@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop_app/screens/edit_product_screen.dart';
 
+import '../models/http_exception.dart';
 import '../providers/products.dart';
 
 class UserProductItem extends StatelessWidget {
@@ -9,16 +12,18 @@ class UserProductItem extends StatelessWidget {
   final String title;
   final String imageUrl;
 
-  UserProductItem(this.title, this.imageUrl, this.id);
+  UserProductItem({
+    required this.id,
+    required this.title,
+    required this.imageUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final scaffold = ScaffoldMessenger.of(context);
+    final scaffold = Scaffold.of(context);
     return ListTile(
       title: Text(title),
-      leading: CircleAvatar(
-        backgroundImage: NetworkImage(imageUrl),
-      ),
+      leading: CircleAvatar(backgroundImage: (NetworkImage(imageUrl))),
       trailing: Container(
         width: 110,
         child: Row(
@@ -35,12 +40,31 @@ class UserProductItem extends StatelessWidget {
                 try {
                   await Provider.of<Products>(context, listen: false)
                       .deleteProduct(id);
-                } catch (error) {
-                  scaffold
-                      .showSnackBar(SnackBar(content: Text('Deleting failed')));
+                }  on  HttpException catch(e){
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text(
+                      'Deleting failed!',
+                      textAlign: TextAlign.center,
+                    ),
+                  ));
+                } on NetException catch(e){
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text(
+                      'Network issue!!!',
+                      textAlign: TextAlign.center,
+                    ),
+                  ));
+                } catch(e){
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text(
+                      'Something went wrong try again',
+                      textAlign: TextAlign.center,
+                    ),
+                  ));
                 }
+
               },
-              icon: const Icon(Icons.delete),
+              icon: Icon(Icons.delete),
               color: Theme.of(context).errorColor,
             ),
           ],
